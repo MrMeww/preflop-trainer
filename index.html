@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Preflop Trainer — MTT 8-max</title>
+<style>
+  :root{--bg:#0f1419;--card:#1b232c;--line:#2b3743;--ink:#e8edf2;--dim:#8a99a8;--accent:#4f8cff;
+    --good:#27c281;--bad:#ff5d6c;--fold:#6b7785;--call:#4f8cff;--raise:#f0a020;--jam:#ff5d6c;--felt:#15543f;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--ink);
+    min-height:100vh;display:flex;flex-direction:column;align-items:center}
+  .wrap{width:100%;max-width:580px;padding:18px 16px 40px}
+  .tabs{display:flex;gap:6px;margin-bottom:8px}
+  .tabs a{padding:8px 14px;border-radius:9px;font-size:14px;font-weight:600;text-decoration:none;color:var(--dim);border:1px solid var(--line)}
+  .tabs a.on{color:#fff;background:var(--accent);border-color:var(--accent)}
+  .disc{font-size:11px;color:var(--dim);margin-bottom:12px}
+  .disc b{color:#aab6c2}
+  .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .top h1{font-size:17px;font-weight:700}
+  .score{display:flex;gap:14px;font-size:13px;color:var(--dim)} .score b{color:var(--ink)}
+  .streak.on{color:var(--raise)}
+  .filters{margin-bottom:12px}
+  .frow{display:flex;align-items:flex-start;gap:8px;margin-bottom:6px}
+  .frow-lbl{width:62px;font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.04em;flex:none;padding-top:6px}
+  .frow-lbl small{display:block;font-size:9px;opacity:.7;text-transform:none;letter-spacing:0}
+  .chips{display:flex;gap:5px;flex-wrap:wrap}
+  .chips button{background:var(--card);color:var(--dim);border:1px solid var(--line);border-radius:8px;padding:5px 11px;font-size:12px;font-weight:700;cursor:pointer;transition:.1s}
+  .chips button:hover{border-color:#41525f} .chips button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .ctx{text-align:center;color:var(--dim);font-size:14px;min-height:20px;margin-bottom:6px}
+  .table-wrap{position:relative;width:100%;aspect-ratio:7/5;margin:4px 0 22px;transition:box-shadow .2s}
+  .felt{position:absolute;inset:7% 4%;background:radial-gradient(ellipse at center,#1c6b4f,var(--felt));border:6px solid #0a2c20;border-radius:50%;box-shadow:inset 0 0 40px rgba(0,0,0,.45)}
+  .table-wrap.ok .felt{box-shadow:inset 0 0 0 3px var(--good),inset 0 0 40px rgba(0,0,0,.45)}
+  .table-wrap.no .felt{box-shadow:inset 0 0 0 3px var(--bad),inset 0 0 40px rgba(0,0,0,.45)}
+  .flash{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:46px;font-weight:900;opacity:0;pointer-events:none}
+  .flash.go{animation:pop .5s ease}
+  @keyframes pop{0%{opacity:0;transform:translate(-50%,-50%) scale(.6)}30%{opacity:1;transform:translate(-50%,-50%) scale(1.1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1)}}
+  .seat{position:absolute;transform:translate(-50%,-50%);width:92px;text-align:center}
+  .pos-badge{display:inline-block;font-size:12px;font-weight:700;color:var(--dim);background:#0d1318;border:1px solid var(--line);border-radius:999px;padding:3px 11px}
+  .seat.dim{opacity:.55} .seat.dim .pos-badge{opacity:.5} .seat.hero{z-index:3}
+  .seat.hero .pos-badge{color:#0f1419;background:var(--accent);border-color:var(--accent);font-size:13px}
+  .seat.villain .pos-badge{color:#1a1205;background:var(--raise);border-color:var(--raise);font-size:13px}
+  .seat .stack{font-size:12px;color:#bfe6d6;margin-top:3px;font-weight:600}
+  .seat .act{font-size:12px;color:var(--raise);margin-top:1px;font-weight:700}
+  .seat-cards{display:flex;gap:5px;justify-content:center;margin-top:5px}
+  .mini{width:34px;height:48px;background:#fbfbfd;color:#11161c;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:21px;font-weight:700;box-shadow:0 2px 6px rgba(0,0,0,.45)}
+  .mini.red{color:#e23b4e}
+  .seat.hero .mini{width:46px;height:64px;font-size:27px;border-radius:8px}
+  .dealer{position:absolute;transform:translate(-50%,-50%);width:20px;height:20px;border-radius:50%;background:#f3f3f0;color:#11161c;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.5)}
+  .actions{display:flex;gap:10px;margin-top:6px;flex-wrap:wrap;justify-content:center}
+  .actions button{flex:1 1 0;min-width:84px;padding:15px 10px;border:0;border-radius:12px;font-size:15px;font-weight:700;color:#fff;cursor:pointer;transition:transform .05s,opacity .12s}
+  .actions button:active{transform:translateY(1px)} .actions button:disabled{opacity:.5;cursor:default}
+  .a-fold{background:var(--fold)} .a-call{background:var(--call)} .a-raise{background:var(--raise);color:#1a1205} .a-allin{background:var(--jam)}
+  .footer{margin-top:16px;display:flex;justify-content:space-between;align-items:center}
+  .endbtn{background:none;border:1px solid var(--line);color:var(--dim);border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer}
+  .muted{color:var(--dim);font-size:12px}
+  .summary{margin-top:16px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;display:none}
+  .summary.show{display:block} .summary h2{font-size:15px} .big{font-size:34px;font-weight:800}
+  .slices{display:flex;gap:18px;flex-wrap:wrap;margin-top:12px} .slice{flex:1 1 150px}
+  .slice h3{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--dim);margin-bottom:6px}
+  .srow{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;border-bottom:1px solid #141b22}
+  .rev{margin-top:16px} .rev h3{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--dim);margin-bottom:8px}
+  .ritem{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+  .ritem.bad{border-color:#5a2730} .ritem.good{border-color:#23463a}
+  .rhead{display:flex;align-items:center;gap:8px;font-size:13px;flex-wrap:wrap}
+  .rhead .vk{color:var(--bad);font-weight:700} .rhead.good .vk{color:var(--good)}
+  .rmini{display:inline-flex;gap:3px} .rmini .mini{width:20px;height:28px;font-size:12px}
+  .rbars{margin-top:7px}
+  .bar-row{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:12px}
+  .bar-lbl{width:54px;text-align:right;color:var(--dim);flex:none}
+  .bar-track{flex:1;background:#10161d;border-radius:5px;height:14px;overflow:hidden} .bar-fill{height:100%;border-radius:5px}
+  .bar-pct{width:38px;flex:none;text-align:right;font-variant-numeric:tabular-nums}
+  .bar-row.you .bar-lbl,.bar-row.you .bar-pct{color:var(--ink);font-weight:700}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="tabs"><a href="index.html" class="on">Trainer</a><a href="range.html">Range Viewer</a></div>
+  <div class="disc"><b>MTT · 8-max · Chip-EV</b> — ranges assume chip-EV, <b>no ICM</b> (bubble / pay-jump effects not modeled). Study tool, not advice.</div>
+  <div class="top">
+    <h1>Preflop Trainer</h1>
+    <div class="score"><span class="streak" id="streak">🔥 0</span><span><b id="correct">0</b>/<span id="total">0</span></span><span><b id="acc">—</b></span></div>
+  </div>
+  <div class="filters">
+    <div class="frow"><span class="frow-lbl">Spots<small>any if none</small></span><div class="chips" id="c-spot"></div></div>
+    <div class="frow"><span class="frow-lbl">Stacks</span><div class="chips" id="c-depth"></div></div>
+    <div class="frow"><span class="frow-lbl">Positions</span><div class="chips" id="c-pos"></div></div>
+  </div>
+  <div class="ctx" id="ctx">Loading…</div>
+  <div class="table-wrap" id="tablewrap"><div class="felt"></div><div class="flash" id="flash"></div></div>
+  <div class="actions" id="actions"></div>
+  <div class="footer"><span class="muted" id="filternote"></span><button class="endbtn" id="end">End session ▸ summary</button></div>
+  <div class="summary" id="summary"></div>
+</div>
+
+<script src="engine.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const SUIT={s:"♠",h:"♥",d:"♦",c:"♣"}, RED=new Set(["h","d"]);
+const ACT_CLASS={fold:"a-fold",call:"a-call",raise:"a-raise",allin:"a-allin"};
+const BAR_COLOR={fold:"#6b7785",call:"#4f8cff",raise:"#f0a020",allin:"#ff5d6c"};
+const ORDER=["UTG","UTG1","LJ","HJ","CO","BTN","SB","BB"], posLabel=p=>p==="UTG1"?"UTG+1":p;
+const MIX_ORDER={allin:0,raise:1,call:2,fold:3};
+const SEL={spot:new Set(),depth:new Set(),pos:new Set()};
+let spot=null, total=0, correct=0, streak=0, busy=false, ATT=[];
+
+function chipRow(id,opts,setKey,fmt){
+  $(id).innerHTML=opts.map(o=>`<button data-v="${o}">${fmt?fmt(o):o}</button>`).join("");
+  $(id).querySelectorAll("button").forEach(b=>b.onclick=()=>{const v=b.dataset.v,s=SEL[setKey];s.has(v)?s.delete(v):s.add(v);b.classList.toggle("on");loadSpot();});
+}
+function miniCards(cards){return cards.map(c=>{const r=c[0],s=c[1].toLowerCase();return `<span class="mini ${RED.has(s)?"red":""}">${r}${SUIT[s]||"?"}</span>`;}).join("");}
+function seatXY(i){const ang=(90+i*45)*Math.PI/180;return {x:50+46*Math.cos(ang),y:50+39*Math.sin(ang)};}
+function renderTable(){
+  $("tablewrap").querySelectorAll(".seat,.dealer").forEach(e=>e.remove());
+  const h=ORDER.indexOf(spot.hero_pos), ring=[]; for(let k=0;k<8;k++) ring.push(ORDER[(h+k)%8]);
+  ring.forEach((pos,i)=>{const {x,y}=seatXY(i);
+    const isHero=pos===spot.hero_pos,isVill=pos===spot.vs_pos;
+    const el=document.createElement("div"); el.className="seat"+(isHero?" hero":isVill?" villain":" dim");
+    el.style.left=x+"%"; el.style.top=y+"%";
+    let html=`<span class="pos-badge">${posLabel(pos)}</span>`;
+    if(isHero){html+=`<div class="seat-cards">${miniCards(spot.cards)}</div><div class="stack">${spot.depth}bb</div>`;}
+    else if(isVill){html+=`<div class="stack">${spot.depth}bb</div>`; const va=Engine.villainAction(spot); if(va)html+=`<div class="act">${va}</div>`;}
+    el.innerHTML=html; $("tablewrap").appendChild(el);
+    if(pos==="BTN"){const d=document.createElement("div");d.className="dealer";d.textContent="D";
+      d.style.left=(50+(x-50)*0.74)+"%"; d.style.top=(50+(y-50)*0.74)+"%"; $("tablewrap").appendChild(d);}
+  });
+}
+function loadSpot(){
+  $("summary").classList.remove("show");
+  spot=Engine.generate({spot_types:[...SEL.spot],depths:[...SEL.depth],hero_pos:[...SEL.pos]});
+  if(!spot){ $("ctx").textContent="No spot matches those filters."; $("actions").innerHTML="";
+    $("tablewrap").querySelectorAll(".seat,.dealer").forEach(e=>e.remove()); return; }
+  $("ctx").textContent=Engine.contextLine(spot);
+  renderTable();
+  $("actions").innerHTML=spot.legal_actions.map(a=>`<button class="${ACT_CLASS[a]||""}" onclick="answer('${a}')">${Engine.actionLabel(a,spot.spot_type)}</button>`).join("");
+  busy=false;
+}
+function answer(action){
+  if(busy)return; busy=true;
+  document.querySelectorAll("#actions button").forEach(b=>b.disabled=true);
+  const g=Engine.grade(spot,action);
+  total++; if(g.correct){correct++;streak++;}else{streak=0;}
+  ATT.push({spot_type:spot.spot_type,hero_pos:spot.hero_pos,vs_pos:spot.vs_pos,depth:spot.depth,
+    hand_key:spot.hand_key,cards:spot.cards,action,gto_best:g.gto_best,correct:g.correct,mix:g.mix});
+  $("correct").textContent=correct; $("total").textContent=total; $("acc").textContent=Math.round(100*correct/total)+"%";
+  const st=$("streak"); st.textContent="🔥 "+streak; st.classList.toggle("on",streak>=3);
+  const tw=$("tablewrap"),fl=$("flash"); tw.classList.add(g.correct?"ok":"no");
+  fl.textContent=g.correct?"✓":"✗"; fl.style.color=g.correct?"var(--good)":"var(--bad)"; fl.classList.add("go");
+  setTimeout(()=>{tw.classList.remove("ok","no");fl.classList.remove("go");loadSpot();},480);
+}
+function sliceBy(keyfn){const agg={};ATT.forEach(r=>{const k=keyfn(r);const a=agg[k]||(agg[k]={n:0,c:0});a.n++;if(r.correct)a.c++;});
+  return Object.fromEntries(Object.entries(agg).sort().map(([k,v])=>[k,{n:v.n,correct:v.c,pct:Math.round(100*v.c/v.n)}]));}
+function endSession(){
+  const acc=ATT.length?Math.round(100*correct/ATT.length):null;
+  const slice=(title,obj)=>`<div class="slice"><h3>${title}</h3>`+Object.entries(obj).map(([k,v])=>`<div class="srow"><span>${k}</span><span>${v.pct}% <span class="muted">(${v.correct}/${v.n})</span></span></div>`).join("")+`</div>`;
+  const lbl=(a,st)=>Engine.actionLabel(a,st);
+  const bars=m=>`<div class="rbars">`+Object.keys(m.mix).sort((a,b)=>MIX_ORDER[a]-MIX_ORDER[b]).map(a=>{
+    const pct=Math.round(m.mix[a]*100),you=a===m.action;
+    return `<div class="bar-row ${you?"you":""}"><span class="bar-lbl">${lbl(a,m.spot_type)}</span><span class="bar-track"><span class="bar-fill" style="width:${pct}%;background:${BAR_COLOR[a]}"></span></span><span class="bar-pct">${pct}%</span></div>`;}).join("")+`</div>`;
+  const item=m=>{const ctx=m.vs_pos?`${posLabel(m.hero_pos)} vs ${posLabel(m.vs_pos)}`:posLabel(m.hero_pos);
+    return `<div class="ritem ${m.correct?"good":"bad"}"><div class="rhead ${m.correct?"good":""}"><span class="rmini">${miniCards(m.cards)}</span><b>${m.hand_key}</b><span class="muted">${ctx} · ${m.depth}bb · ${m.spot_type}</span><span style="flex:1"></span><span class="vk">${m.correct?"✓":"✗"} you: ${lbl(m.action,m.spot_type)}</span>${m.correct?"":`<span class="muted">GTO: ${lbl(m.gto_best,m.spot_type)}</span>`}</div>${bars(m)}</div>`;};
+  const rev=[...ATT].sort((a,b)=>a.correct-b.correct);
+  $("summary").innerHTML=`<h2>Session summary</h2><div class="big">${acc==null?"—":acc+"%"}</div><div class="muted">${correct}/${ATT.length} correct</div>
+    <div class="slices">${slice("Spot type",sliceBy(r=>r.spot_type))}${slice("Position",sliceBy(r=>r.hero_pos))}${slice("Hand class",sliceBy(r=>Engine.handClass(r.hand_key)))}</div>
+    <div class="rev"><h3>Review — solutions (mistakes first)</h3>${rev.map(item).join("")||"<span class='muted'>No hands yet.</span>"}</div>`;
+  $("summary").classList.add("show"); $("summary").scrollIntoView({behavior:"smooth"});
+}
+(async function init(){
+  await Engine.load();
+  const f=Engine.filters(), labels={rfi:"RFI (open)",jam_or_fold:"Jam or fold",vs_rfi:"vs RFI",bb_defend:"BB defend",vs_3bet:"vs 3-bet"};
+  const SPOT_ORDER=["rfi","jam_or_fold","vs_rfi","bb_defend","vs_3bet"];
+  chipRow("c-spot",[...f.spot_types].sort((a,b)=>SPOT_ORDER.indexOf(a)-SPOT_ORDER.indexOf(b)),"spot",t=>labels[t]||t);
+  chipRow("c-depth",[...f.depths].sort((a,b)=>a-b),"depth",d=>d+"bb");
+  chipRow("c-pos",[...f.positions].sort((a,b)=>ORDER.indexOf(a)-ORDER.indexOf(b)),"pos",posLabel);
+  $("end").addEventListener("click",endSession);
+  loadSpot();
+})();
+</script>
+</body>
+</html>
