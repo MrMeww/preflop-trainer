@@ -64,6 +64,7 @@ function fillBtns(id,opts,field,fmt){
   $(id).querySelectorAll("button").forEach(b=>b.onclick=()=>{sel[field]=b.dataset.v;refresh();});
 }
 function refresh(){
+  $("b-spot").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.v===sel.spot_type));
   let c=NODES.filter(n=>!sel.spot_type||n.spot_type===sel.spot_type);
   fillBtns("b-hero",posSort(distinct(c.map(n=>n.hero_pos))),"hero_pos",posLabel);
   c=c.filter(n=>n.hero_pos===sel.hero_pos);
