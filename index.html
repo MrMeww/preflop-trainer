@@ -103,6 +103,14 @@ const ORDER=["UTG","UTG1","LJ","HJ","CO","BTN","SB","BB"], posLabel=p=>p==="UTG1
 const MIX_ORDER={allin:0,raise:1,call:2,fold:3};
 const SEL={spot:new Set(),depth:new Set(),pos:new Set()};
 let spot=null, total=0, correct=0, streak=0, busy=false, ATT=[];
+// Anonymous capture: random per-load id (NOT tied to any person/IP). Fire-and-forget to the
+// Cloudflare Worker; 404s harmlessly on static-only hosts (e.g. GitHub Pages).
+const SID=Math.random().toString(36).slice(2,12)+Date.now().toString(36);
+function capture(a){ try{ fetch("/api/attempt",{method:"POST",keepalive:true,
+  headers:{"Content-Type":"application/json"},
+  body:JSON.stringify({session:SID,spot_type:a.spot_type,hero_pos:a.hero_pos,vs_pos:a.vs_pos,
+    depth:a.depth,threebet_to_bb:a.threebet_to_bb??null,hand_key:a.hand_key,
+    action:a.action,gto_best:a.gto_best,correct:a.correct})}).catch(()=>{}); }catch(e){} }
 
 function chipRow(id,opts,setKey,fmt){
   $(id).innerHTML=opts.map(o=>`<button data-v="${o}">${fmt?fmt(o):o}</button>`).join("");
@@ -140,8 +148,10 @@ function answer(action){
   document.querySelectorAll("#actions button").forEach(b=>b.disabled=true);
   const g=Engine.grade(spot,action);
   total++; if(g.correct){correct++;streak++;}else{streak=0;}
-  ATT.push({spot_type:spot.spot_type,hero_pos:spot.hero_pos,vs_pos:spot.vs_pos,depth:spot.depth,
-    hand_key:spot.hand_key,cards:spot.cards,action,gto_best:g.gto_best,correct:g.correct,mix:g.mix});
+  const att={spot_type:spot.spot_type,hero_pos:spot.hero_pos,vs_pos:spot.vs_pos,depth:spot.depth,
+    threebet_to_bb:spot.threebet_to_bb,hand_key:spot.hand_key,cards:spot.cards,
+    action,gto_best:g.gto_best,correct:g.correct,mix:g.mix};
+  ATT.push(att); capture(att);
   $("correct").textContent=correct; $("total").textContent=total; $("acc").textContent=Math.round(100*correct/total)+"%";
   const st=$("streak"); st.textContent="🔥 "+streak; st.classList.toggle("on",streak>=3);
   const tw=$("tablewrap"),fl=$("flash"); tw.classList.add(g.correct?"ok":"no");

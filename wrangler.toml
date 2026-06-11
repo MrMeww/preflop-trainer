@@ -1,0 +1,16 @@
+# Cloudflare Worker config — serves the static site + the /api capture endpoints.
+# database_id is filled in AFTER you create the D1 database (see CAPTURE.md).
+name = "preflop-trainer"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+
+# Serve the repo root as static assets; the Worker handles /api/* and falls through
+# to env.ASSETS for everything else.
+[assets]
+directory = "."
+binding = "ASSETS"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "trainer_data"
+database_id = "481bf331-0d91-4e27-bdb3-15094dd05054"
