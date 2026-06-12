@@ -104,14 +104,20 @@ const ORDER=["UTG","UTG1","LJ","HJ","CO","BTN","SB","BB"], posLabel=p=>p==="UTG1
 const MIX_ORDER={allin:0,raise:1,call:2,fold:3};
 const SEL={spot:new Set(),depth:new Set(),pos:new Set()};
 let spot=null, total=0, correct=0, streak=0, busy=false, ATT=[];
-// Anonymous capture: random per-load id (NOT tied to any person/IP). Fire-and-forget to the
-// Cloudflare Worker; 404s harmlessly on static-only hosts (e.g. GitHub Pages).
+// Anonymous capture (all invisible to the user). SID = per-load session id; CID = a random
+// returning-browser id in localStorage (no email/IP — standard anonymous analytics);
+// VER = range-set version (bump when ranges change). Fire-and-forget; 404s harmlessly on
+// static-only hosts (e.g. GitHub Pages).
 const SID=Math.random().toString(36).slice(2,12)+Date.now().toString(36);
+const VER="r1";   // bump (r2, r3…) whenever the ranges bundle changes
+const CID=(()=>{try{let c=localStorage.getItem("pt_cid");
+  if(!c){c=Math.random().toString(36).slice(2)+Date.now().toString(36);localStorage.setItem("pt_cid",c);}
+  return c;}catch(e){return null;}})();
 function capture(a){ try{ fetch("/api/attempt",{method:"POST",keepalive:true,
   headers:{"Content-Type":"application/json"},
-  body:JSON.stringify({session:SID,spot_type:a.spot_type,hero_pos:a.hero_pos,vs_pos:a.vs_pos,
-    depth:a.depth,threebet_to_bb:a.threebet_to_bb??null,hand_key:a.hand_key,
-    action:a.action,gto_best:a.gto_best,correct:a.correct})}).catch(()=>{}); }catch(e){} }
+  body:JSON.stringify({session:SID,client:CID,ver:VER,spot_type:a.spot_type,hero_pos:a.hero_pos,
+    vs_pos:a.vs_pos,depth:a.depth,threebet_to_bb:a.threebet_to_bb??null,hand_key:a.hand_key,
+    action:a.action,gto_best:a.gto_best,correct:a.correct,chosen_freq:a.chosen_freq})}).catch(()=>{}); }catch(e){} }
 
 function chipRow(id,opts,setKey,fmt){
   $(id).innerHTML=opts.map(o=>`<button data-v="${o}">${fmt?fmt(o):o}</button>`).join("");
@@ -151,7 +157,7 @@ function answer(action){
   total++; if(g.correct){correct++;streak++;}else{streak=0;}
   const att={spot_type:spot.spot_type,hero_pos:spot.hero_pos,vs_pos:spot.vs_pos,depth:spot.depth,
     threebet_to_bb:spot.threebet_to_bb,hand_key:spot.hand_key,cards:spot.cards,
-    action,gto_best:g.gto_best,correct:g.correct,mix:g.mix};
+    action,gto_best:g.gto_best,correct:g.correct,chosen_freq:g.chosen_freq,mix:g.mix};
   ATT.push(att); capture(att);
   $("correct").textContent=correct; $("total").textContent=total; $("acc").textContent=Math.round(100*correct/total)+"%";
   const st=$("streak"); st.textContent="🔥 "+streak; st.classList.toggle("on",streak>=3);
