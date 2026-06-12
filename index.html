@@ -27,7 +27,8 @@
   .chips{display:flex;gap:5px;flex-wrap:wrap}
   .chips button{background:var(--card);color:var(--dim);border:1px solid var(--line);border-radius:8px;padding:5px 11px;font-size:12px;font-weight:700;cursor:pointer;transition:.1s}
   .chips button:hover{border-color:#41525f} .chips button.on{background:var(--accent);border-color:var(--accent);color:#fff}
-  .ctx{text-align:center;color:var(--dim);font-size:14px;min-height:20px;margin-bottom:6px}
+  .ctx{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:46%;text-align:center;
+    color:#e6f3ec;font-size:13px;line-height:1.4;z-index:1;text-shadow:0 1px 4px rgba(0,0,0,.65)}
   .table-wrap{position:relative;width:100%;aspect-ratio:7/5;margin:4px 0 22px;transition:box-shadow .2s}
   .felt{position:absolute;inset:7% 4%;background:radial-gradient(ellipse at center,#1c6b4f,var(--felt));border:6px solid #0a2c20;border-radius:50%;box-shadow:inset 0 0 40px rgba(0,0,0,.45)}
   .table-wrap.ok .felt{box-shadow:inset 0 0 0 3px var(--good),inset 0 0 40px rgba(0,0,0,.45)}
@@ -87,8 +88,7 @@
     <div class="frow"><span class="frow-lbl">Stacks</span><div class="chips" id="c-depth"></div></div>
     <div class="frow"><span class="frow-lbl">Positions</span><div class="chips" id="c-pos"></div></div>
   </div>
-  <div class="ctx" id="ctx">Loading…</div>
-  <div class="table-wrap" id="tablewrap"><div class="felt"></div><div class="flash" id="flash"></div></div>
+  <div class="table-wrap" id="tablewrap"><div class="felt"></div><div class="ctx" id="ctx">Loading…</div><div class="flash" id="flash"></div></div>
   <div class="actions" id="actions"></div>
   <div class="footer"><span class="muted" id="filternote"></span><button class="endbtn" id="end">End session ▸ summary</button></div>
   <div class="summary" id="summary"></div>
