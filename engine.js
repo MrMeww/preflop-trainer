@@ -50,12 +50,9 @@ const Engine = (() => {
 
   async function load(url = "ranges.json") {
     NODES = (await fetch(url).then(r => r.json())).nodes;
-    INDEX = [];
-    for (const n of NODES) {
-      INDEX.push(n);
-      if (n.spot_type === "rfi" && n.legal_actions.includes("allin"))
-        INDEX.push({ ...n, spot_type: "jam_or_fold" });   // derived view, like spot.py
-    }
+    // No separate "jam_or_fold" mode — short-stack jam/fold is just RFI at 10/14bb,
+    // reachable via the RFI spot + a short stack filter.
+    INDEX = NODES.slice();
   }
   const distinct = a => [...new Set(a)];
   function filters() {
